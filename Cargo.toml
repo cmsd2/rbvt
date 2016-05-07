@@ -2,6 +2,7 @@
 name = "rbvt"
 version = "0.1.0"
 authors = ["Chris Dawes <cmsd2@cantab.net>"]
+license = "Apache-2.0"
 
 [dependencies]
 quick-error = "1.0.0"
