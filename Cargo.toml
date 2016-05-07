@@ -1,0 +1,7 @@
+[package]
+name = "rbvt"
+version = "0.1.0"
+authors = ["Chris Dawes <cmsd2@cantab.net>"]
+
+[dependencies]
+quick-error = "1.0.0"
