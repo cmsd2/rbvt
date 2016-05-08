@@ -16,6 +16,12 @@ pub struct ValidationState
     pub errors: Vec<ValidationError>,
 }
 
+impl Default for ValidationState {
+    fn default() -> ValidationState {
+        ValidationState::new()
+    }
+}
+
 impl ValidationState {
     pub fn new() -> ValidationState {
         ValidationState {
