@@ -1,15 +1,15 @@
-use super::state::*;
-use super::result;
+use state::*;
+use result::ValidationResult;
 
 pub trait BuilderRule<T, A, S>
 {
-	fn build(&self, input:&T, accumulator: &mut A, state: &mut S) -> result::Result<()>;
+	fn build(&self, input:&T, accumulator: &mut A, state: &mut S) -> ValidationResult<()>;
 }
 
 impl <T, A, S, F> BuilderRule<T, A, S> for F
-where F: Fn(&T, &mut A, &mut S) -> result::Result<()>
+where F: Fn(&T, &mut A, &mut S) -> ValidationResult<()>
 {
-    fn build(&self, input:&T, accumulator: &mut A, state: &mut S) -> result::Result<()> {
+    fn build(&self, input:&T, accumulator: &mut A, state: &mut S) -> ValidationResult<()> {
         (*self)(input, accumulator, state)
     }
 }
@@ -32,7 +32,7 @@ impl <M, A> Builder<M, A> {
         self.rules.push(r)
     }
     
-    pub fn build<'a>(&mut self, model: &M, accumulator: &'a mut A) -> result::Result<&'a A> {
+    pub fn build<'a>(&mut self, model: &M, accumulator: &'a mut A) -> ValidationResult<&'a A> {
         for rule in self.rules.iter() {
             if let Err(err) = rule.build(model, accumulator, &mut self.state) {
                 self.state.valid = false;
@@ -53,9 +53,9 @@ mod test {
     use std::collections::HashMap;
     
     use super::*;
-    use super::super::result;
-    use super::super::params::*;
-    use super::super::state::*;
+    use result::{ValidationResult, ValidationError};
+    use params::*;
+    use state::*;
     
     #[derive(Clone, Debug, PartialEq)]
     pub struct TestStruct {
@@ -76,40 +76,40 @@ mod test {
     }
     
     impl TestStructBuilder {
-        pub fn build(self) -> result::Result<TestStruct> {
+        pub fn build(self) -> ValidationResult<TestStruct> {
             if self.state.valid {
                 Ok(TestStruct {
-                    number: try!(self.number.ok_or(result::ValidationError::MissingRequiredValue("number".to_owned()))),
+                    number: try!(self.number.ok_or(ValidationError::MissingRequiredValue("number".to_owned()))),
                     maybe_number: self.maybe_number,
-                    text: try!(self.text.ok_or(result::ValidationError::MissingRequiredValue("text".to_owned()))),
+                    text: try!(self.text.ok_or(ValidationError::MissingRequiredValue("text".to_owned()))),
                     maybe_text: self.maybe_text
                 })
             } else {
-                Err(result::ValidationError::ValidationError(self.state))
+                Err(ValidationError::ValidationError(self.state))
             }
         }
         
-        pub fn load_values(&mut self, values: &HashMap<String, Vec<String>>) -> result::Result<bool> {
+        pub fn load_values(&mut self, values: &HashMap<String, Vec<String>>) -> ValidationResult<bool> {
             if let Some(number) = try!(multimap_get_maybe_one(values, "number")) {
                 if let Ok(number) = number.parse::<i32>() {
                     self.number = Some(number);
                 } else {
-                    self.state.reject("number", result::ValidationError::InvalidValue("test msg".to_owned()));
+                    self.state.reject("number", ValidationError::InvalidValue("test msg".to_owned()));
                 }
             } else {
-                self.state.reject("number", result::ValidationError::MissingRequiredValue("test msg".to_owned()));
+                self.state.reject("number", ValidationError::MissingRequiredValue("test msg".to_owned()));
             }
             
             if let Some(text) = try!(multimap_get_maybe_one(values, "text")) {
                 self.text = Some(text.to_owned());
             } else {
-                self.state.reject("text", result::ValidationError::MissingRequiredValue("test msg".to_owned()));
+                self.state.reject("text", ValidationError::MissingRequiredValue("test msg".to_owned()));
             }
             
             Ok(self.state.valid)
         }
         
-        pub fn from_hashmap(values: &HashMap<String, Vec<String>>) -> result::Result<TestStruct> {
+        pub fn from_hashmap(values: &HashMap<String, Vec<String>>) -> ValidationResult<TestStruct> {
             let mut accumulator = TestStructBuilder {
                 number: None,
                 maybe_number: None,
@@ -160,7 +160,7 @@ mod test {
         
         assert_eq!(build_result.is_ok(), false);
         
-        if let result::ValidationError::ValidationError(state) = build_result.err().unwrap() {
+        if let ValidationError::ValidationError(state) = build_result.err().unwrap() {
             assert_eq!(state.errors.is_empty(), true);
             assert_eq!(state.fields.get("text").unwrap().errors.len(), 1);
             assert_eq!(format!("{}", state.fields.get("text").unwrap().errors.get(0).unwrap()), "missing required value: test msg");
@@ -182,8 +182,8 @@ mod test {
             
         let mut builder = Builder::<String, TestStructBuilder>::new();
             
-        builder.rule(Box::new(|_input: &String, _accumulator: &mut TestStructBuilder, _state: &mut ValidationState| -> result::Result<()> {
-            Err(result::ValidationError::ApplicationError("test error".to_owned()))
+        builder.rule(Box::new(|_input: &String, _accumulator: &mut TestStructBuilder, _state: &mut ValidationState| -> ValidationResult<()> {
+            Err(ValidationError::ApplicationError("test error".to_owned()))
         }));
         
         assert_eq!(builder.build(&String::new(), &mut accumulator).is_ok(), true);

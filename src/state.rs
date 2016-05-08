@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use super::result::ValidationError;
-use super::field::Field;
+use result::ValidationError;
+use field::Field;
 
 pub trait State {
     fn accept(&mut self, field_name: &str);

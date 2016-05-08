@@ -3,8 +3,8 @@ use std::sync::Arc;
 use std::io;
 use std::error;
 
-use super::params;
-use super::state::ValidationState;
+use params;
+use state::ValidationState;
 
 quick_error! {
     #[derive(Clone, Debug)]
@@ -52,4 +52,4 @@ quick_error! {
     }
 }
 
-pub type Result<T> = result::Result<T, ValidationError>;
+pub type ValidationResult<T> = result::Result<T, ValidationError>;

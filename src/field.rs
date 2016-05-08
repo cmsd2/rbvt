@@ -1,4 +1,4 @@
-use super::result::ValidationError;
+use result::ValidationError;
 
 #[derive(Clone, Debug)]
 pub struct Field {

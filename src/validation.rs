@@ -1,19 +1,19 @@
-use super::state::*;
-use super::result::{Result};
+use state::*;
+use result::ValidationResult;
 
 pub trait Validator<M> {
-    fn validate(&mut self, model: &M) -> Result<bool>;
+    fn validate(&mut self, model: &M) -> ValidationResult<bool>;
 }
 
 pub trait Rule<T, S>
 {
-	fn validate(&self, input:&T, state: &mut S) -> Result<()>;
+	fn validate(&self, input:&T, state: &mut S) -> ValidationResult<()>;
 }
 
 impl <T, S, F> Rule<T, S> for F
-where F: Fn(&T, &mut S) -> Result<()>
+where F: Fn(&T, &mut S) -> ValidationResult<()>
 {
-    fn validate(&self, input:&T, state: &mut S) -> Result<()> {
+    fn validate(&self, input:&T, state: &mut S) -> ValidationResult<()> {
         (*self)(input, state)
     }
 }
@@ -38,7 +38,7 @@ impl <M> ValidationSchema<M> {
 }
 
 impl <M> Validator<M> for ValidationSchema<M> {
-    fn validate(&mut self, model: &M) -> Result<bool> {
+    fn validate(&mut self, model: &M) -> ValidationResult<bool> {
         for rule in self.rules.iter() {
             if let Err(err) = rule.validate(model, &mut self.state) {
                 self.state.valid = false;
@@ -116,7 +116,7 @@ mod tests {
     pub fn test_err_rule() {
         let mut v = ValidationSchema::<TestStruct>::new();
         
-        v.rule(Box::new(|_m: &TestStruct, _vs: &mut ValidationState| -> Result<()> {
+        v.rule(Box::new(|_m: &TestStruct, _vs: &mut ValidationState| -> ValidationResult<()> {
             Err(ValidationError::ApplicationError("test error".to_owned()))
         }));
         
